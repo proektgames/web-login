@@ -4,14 +4,10 @@ import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
 import { Card } from './components/ui/card';
-import { Mail, Lock, ArrowRight, ArrowLeft, User, CheckCircle } from 'lucide-react';
-import { signUp, type SignUpData } from './lib/auth';
+import { Mail, Lock, ArrowRight, ArrowLeft, User } from 'lucide-react';
 
 export default function App() {
   const [currentStep, setCurrentStep] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -49,41 +45,20 @@ export default function App() {
   ];
 
   const currentStepData = steps[currentStep];
-  const Icon = currentStepData?.icon || CheckCircle;
+  const Icon = currentStepData.icon;
 
-  const handleNext = async () => {
-    setErrorMessage('');
-    
+  const handleNext = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
       // Handle form submission
-      setIsLoading(true);
-      
-      try {
-        const result = await signUp(formData as SignUpData);
-        
-        if (result.success) {
-          setIsSuccess(true);
-          // Store token in localStorage (in real app, use secure storage)
-          if (result.token) {
-            localStorage.setItem('auth_token', result.token);
-          }
-        } else {
-          setErrorMessage(result.message);
-        }
-      } catch (error) {
-        setErrorMessage('An unexpected error occurred. Please try again.');
-      } finally {
-        setIsLoading(false);
-      }
+      console.log('Form submitted:', formData);
     }
   };
 
   const handleBack = () => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
-      setErrorMessage('');
     }
   };
 
@@ -92,12 +67,9 @@ export default function App() {
       ...prev,
       [currentStepData.field]: value
     }));
-    setErrorMessage('');
   };
 
   const isCurrentStepValid = () => {
-    if (isSuccess) return true;
-    
     const value = formData[currentStepData.field as keyof typeof formData];
     if (currentStepData.field === 'email') {
       return value.includes('@') && value.length > 3;
@@ -110,42 +82,6 @@ export default function App() {
     }
     return value.length > 0;
   };
-
-  // Success state
-  if (isSuccess) {
-    return (
-      <div className="dark min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <Card className="bg-card border-border shadow-2xl overflow-hidden">
-            <div className="p-8">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-                className="text-center space-y-6"
-              >
-                <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto">
-                  <CheckCircle className="w-8 h-8 text-green-500" />
-                </div>
-                <div>
-                  <h1 className="text-foreground mb-2">Welcome aboard!</h1>
-                  <p className="text-muted-foreground">
-                    Your account has been created successfully.
-                  </p>
-                </div>
-                <Button 
-                  onClick={() => window.location.reload()}
-                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  Continue to Dashboard
-                </Button>
-              </motion.div>
-            </div>
-          </Card>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="dark min-h-screen bg-background flex items-center justify-center p-4">
@@ -234,15 +170,11 @@ export default function App() {
                     onChange={(e) => handleInputChange(e.target.value)}
                     className="bg-input border-border text-foreground placeholder:text-muted-foreground focus:ring-ring"
                     autoFocus
-                    disabled={isLoading}
                   />
                   {currentStepData.field === 'confirmPassword' && 
                    formData.confirmPassword && 
                    formData.confirmPassword !== formData.password && (
                     <p className="text-destructive text-sm">Passwords don't match</p>
-                  )}
-                  {errorMessage && (
-                    <p className="text-destructive text-sm">{errorMessage}</p>
                   )}
                 </motion.div>
 
@@ -256,7 +188,7 @@ export default function App() {
                   <Button
                     variant="ghost"
                     onClick={handleBack}
-                    disabled={currentStep === 0 || isLoading}
+                    disabled={currentStep === 0}
                     className="text-muted-foreground hover:text-foreground disabled:opacity-30"
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
@@ -265,19 +197,10 @@ export default function App() {
 
                   <Button
                     onClick={handleNext}
-                    disabled={!isCurrentStepValid() || isLoading}
+                    disabled={!isCurrentStepValid()}
                     className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                   >
-                    {isLoading ? (
-                      <>
-                        Creating...
-                        <motion.div
-                          className="w-4 h-4 ml-2 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full"
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        />
-                      </>
-                    ) : currentStep === steps.length - 1 ? (
+                    {currentStep === steps.length - 1 ? (
                       <>
                         Create Account
                         <User className="w-4 h-4 ml-2" />
